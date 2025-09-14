@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katalog Produk</title>
+  <style>
+    /* === WARNA & FONT UTAMA === */
+    :root {
+      --primary-color: #2d6a4f; /* warna utama / tombol */
+      --card-bg: #fff;           /* background kartu */
+      --card-hover-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      --body-bg: #f8f9fa;
+      --text-color: #333;
+    }
+
+    body {margin:0; font-family: Arial, sans-serif; background:var(--body-bg); color:var(--text-color);} 
+    header {background:var(--primary-color); color:#fff; padding:1rem; text-align:center;}
+    header h1 {margin:0;}
+    .container {max-width:1000px; margin:20px auto; padding:0 15px;}
+    .search-filter {display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;}
+    .search-filter input, .search-filter select {padding:8px; flex:1; min-width:150px; border-radius:5px; border:1px solid #ccc;}
+    
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    /* Responsive: HP ≤600px → 2 kolom */
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .card {background:var(--card-bg); border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); overflow:hidden; display:flex; flex-direction:column; transition: transform 0.2s, box-shadow 0.2s;}
+    .card:hover {transform: translateY(-5px); box-shadow: var(--card-hover-shadow);} 
+    .card img {width:100%; height:180px; object-fit:cover;} 
+    .card-body {padding:15px; flex:1; display:flex; flex-direction:column;}
+    .card-body h3 {margin:0 0 10px;}
+    .card-body p {flex:1; font-size:14px; color:#555;}
+    .price {font-weight:bold; color:var(--primary-color); margin:10px 0;}
+    .btn {display:inline-block; padding:10px 15px; border:none; border-radius:5px; text-decoration:none; cursor:pointer; text-align:center; font-size:14px;}
+    .btn-buy {background:var(--primary-color); color:#fff; transition: background 0.2s;}
+    .btn-buy:hover {background:#1b4332;}
+    .btn-preview {border:1px solid var(--primary-color); color:var(--primary-color); transition: background 0.2s, color 0.2s;}
+    .btn-preview:hover {background:var(--primary-color); color:#fff;}
+    footer {background:#eee; text-align:center; padding:15px; margin-top:40px; font-size:14px; color:#666;}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>INVITATION</h1>
+  <p></p>
+</header>
+
+<div class="container">
+  <!-- Search & Filter -->
+  <div class="search-filter">
+    <input type="text" id="search" placeholder="Cari produk...">
+    <select id="category">
+      <option value="all">Semua Kategori</option>
+    </select>
+  </div>
+
+  <!-- Product Grid -->
+  <div id="product-grid" class="grid"></div>
+</div>
+
+<footer>
+  &copy; 2025 Katalog Produk • Pesan via WhatsApp
+</footer>
+
+<script>
+  // === DATA PRODUK ===
+  const products = [
+    { 
+      id:1, 
+      name:"SAGE GREEN", 
+      price:129000, 
+      img:"https://via.placeholder.com/400x300?text=Sage+Green", 
+      desc:"Tema sage green minimalis untuk undangan modern.", 
+      category:"REVISIIN",
+      previewUrl:"https://refursh.netlify.app/" 
+    },
+    { 
+      id:2, 
+      name:"GOLD-01", 
+      price:99000, 
+      img:"https://via.placeholder.com/400x300?text=Gold+01", 
+      desc:"Tema gold elegan, mewah namun tetap clean.", 
+      category:"GOLD",
+      previewUrl:"https://gold-001.netlify.app/"
+    },
+    { 
+      id:3, 
+      name:"Parcel Lebaran", 
+      price:299000, 
+      img:"https://via.placeholder.com/400x300?text=Parcel+Lebaran", 
+      desc:"Paket premium isi kurma + camilan + minuman.", 
+      category:"", // kosong → akan dipetakan ke "Lainnya"
+      previewUrl:"https://sage-green.netlify.app/"
+    }
+    
+  ];
+
+  const WA_NUMBER = "6285161773994"; // ganti dengan nomor WhatsApp kamu
+
+  const grid = document.getElementById("product-grid");
+  const searchInput = document.getElementById("search");
+  const categorySelect = document.getElementById("category");
+
+  // === UTIL: Format harga ===
+  function formatPrice(num) { return "Rp " + num.toLocaleString("id-ID"); }
+
+  // === NEW: Generator ID otomatis ===
+  function getNextId() {
+    return products.length ? Math.max(...products.map(p => Number(p.id)||0)) + 1 : 1;
+  }
+
+  // === NEW: Bangun ulang dropdown kategori (dengan fallback "Lainnya") ===
+  function refreshCategories() {
+    const list = ["all", ...new Set(products.map(p => (p.category && p.category.trim()) ? p.category : "Lainnya"))];
+    categorySelect.innerHTML = "";
+    list.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      categorySelect.appendChild(opt);
+    });
+  }
+
+  function renderProducts() {
+    const q = searchInput.value.toLowerCase();
+    const cat = categorySelect.value;
+    grid.innerHTML = "";
+
+    const filtered = products.filter(p => {
+      const nameDescMatch = (p.name.toLowerCase().includes(q) || (p.desc||"").toLowerCase().includes(q));
+      const catName = (p.category && p.category.trim()) ? p.category : "Lainnya";
+      const catMatch = (cat === "all" || catName === cat);
+      return nameDescMatch && catMatch;
+    });
+
+    if (filtered.length === 0) { grid.innerHTML = "<p>Tidak ada produk.</p>"; return; }
+
+    filtered.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.id = `product-${p.id}`; // id elemen untuk anchor/deeplink
+      card.innerHTML = `
+        <img src="${p.img}" alt="${p.name}">
+        <div class="card-body">
+          <h3>${p.name} <small style="font-weight:normal;color:#888;">#${p.id}</small></h3>
+          <p>${p.desc || ""}</p>
+          <div class="price">${formatPrice(p.price)}</div>
+          <div style="display:flex; gap:5px; margin-top:auto; flex-wrap:wrap;">
+            <a href="https://wa.me/${WA_NUMBER}?text=Saya%20mau%20pesan%20${encodeURIComponent(p.name)}" target="_blank" class="btn btn-buy">Beli via WhatsApp</a>
+            <a href="${p.previewUrl}" target="_blank" class="btn btn-preview">Preview</a>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // INIT
+  refreshCategories();
+  renderProducts();
+
+  // Events
+  searchInput.addEventListener("input", renderProducts);
+  categorySelect.addEventListener("change", renderProducts);
+
+  // --- Contoh menambah produk baru (pakai ID otomatis) ---
+   products.push({
+     id: getNextId(),
+    name: "ROSE GOLD-02",
+     price: 149000,
+    img: "https://via.placeholder.com/400x300?text=Rose+Gold+02",
+     desc: "Tema rose gold elegan.",
+    category: "simple",
+    previewUrl: "https://simmple-001.netlify.app/"
+   });
+   refreshCategories();
+  renderProducts();
+</script>
+
+</body>
+</html>
